@@ -59,7 +59,7 @@ Every [solution](https://github.com/fspoettel/advent-of-code-rust/blob/main/src/
 
 ### Download input & description for a day
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > This command requires [installing the aoc-cli crate](#configure-aoc-cli-integration).
 
 ```sh
