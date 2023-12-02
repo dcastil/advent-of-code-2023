@@ -82,21 +82,17 @@ fn get_string_positions<const N: usize>(
     line: &str,
     number_strings: &[(u32, &str); N],
 ) -> [(Option<NumberPosition>, Option<NumberPosition>); N] {
-    return number_strings.map(|(number, number_string)| {
-        let position_first = if let Some(index) = line.find(number_string) {
-            Some(NumberPosition { number, index })
-        } else {
-            None
-        };
+    number_strings.map(|(number, number_string)| {
+        let position_first = line
+            .find(number_string)
+            .map(|index| NumberPosition { number, index });
 
-        let position_last = if let Some(index) = line.rfind(number_string) {
-            Some(NumberPosition { number, index })
-        } else {
-            None
-        };
+        let position_last = line
+            .rfind(number_string)
+            .map(|index| NumberPosition { number, index });
 
         (position_first, position_last)
-    });
+    })
 }
 
 fn get_first_numeric_position(line: &str) -> Option<NumberPosition> {
