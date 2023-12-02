@@ -15,7 +15,17 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut sum = 0;
+
+    for line in input.lines() {
+        let game = parse_game(line);
+        let minimum_set = get_minimum_set(&game.sets);
+        let minimum_set_power = minimum_set.red * minimum_set.green * minimum_set.blue;
+
+        sum += minimum_set_power;
+    }
+
+    Some(sum)
 }
 
 fn parse_game(line: &str) -> Game {
@@ -65,6 +75,30 @@ fn is_set_possible(set: &GameSet) -> bool {
     set.red <= 12 && set.green <= 13 && set.blue <= 14
 }
 
+fn get_minimum_set(sets: &Vec<GameSet>) -> GameSet {
+    let mut minimum_set = GameSet {
+        red: 0,
+        green: 0,
+        blue: 0,
+    };
+
+    for set in sets {
+        if set.red > minimum_set.red {
+            minimum_set.red = set.red;
+        }
+
+        if set.green > minimum_set.green {
+            minimum_set.green = set.green;
+        }
+
+        if set.blue > minimum_set.blue {
+            minimum_set.blue = set.blue;
+        }
+    }
+
+    minimum_set
+}
+
 struct Game {
     id: u32,
     sets: Vec<GameSet>,
@@ -89,6 +123,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(2286));
     }
 }
