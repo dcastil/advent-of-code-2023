@@ -15,7 +15,16 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let mut sum = 0;
+    let mut window = EngineSchematicWindow::new();
+
+    for line in input.lines().chain("\n\n".lines()) {
+        window.add_row_from_line(line);
+
+        sum += window.sum_gear_ratios();
+    }
+
+    Some(sum)
 }
 
 struct EngineSchematicWindow {
@@ -102,11 +111,42 @@ impl EngineSchematicWindow {
     fn get_row_bottom(&self) -> &EngineSchematicRow {
         &self.rows[self.overflow_index]
     }
+
+    fn sum_gear_ratios(&self) -> u32 {
+        let mut sum = 0;
+
+        for gear_range in self.get_gear_ranges_from_middle_row() {
+            let mut gear_numbers = Vec::new();
+
+            for row in self.rows.iter() {
+                for number in row.numbers.iter() {
+                    if number.overlaps(&gear_range) {
+                        gear_numbers.push(number.value);
+                    }
+                }
+            }
+
+            if gear_numbers.len() == 2 {
+                sum += gear_numbers.iter().product::<u32>();
+            }
+        }
+
+        sum
+    }
+
+    fn get_gear_ranges_from_middle_row(&self) -> Vec<std::ops::RangeInclusive<usize>> {
+        self.get_row_middle()
+            .gear_symbol_indices
+            .iter()
+            .map(|index| index - 1..=index + 1)
+            .collect()
+    }
 }
 
 struct EngineSchematicRow {
     numbers: Vec<EngineSchematicNumber>,
     symbol_indices: Vec<usize>,
+    gear_symbol_indices: Vec<usize>,
 }
 
 impl EngineSchematicRow {
@@ -129,6 +169,10 @@ impl EngineSchematicRow {
                 }
             } else if character != '.' {
                 row.symbol_indices.push(index);
+
+                if character == '*' {
+                    row.gear_symbol_indices.push(index);
+                }
             }
         }
 
@@ -139,6 +183,7 @@ impl EngineSchematicRow {
         EngineSchematicRow {
             numbers: Vec::new(),
             symbol_indices: Vec::new(),
+            gear_symbol_indices: Vec::new(),
         }
     }
 }
@@ -172,6 +217,10 @@ impl EngineSchematicNumber {
             self.is_part_number = true;
         }
     }
+
+    fn overlaps(&self, range: &std::ops::RangeInclusive<usize>) -> bool {
+        self.range.start() <= range.end() && self.range.end() >= range.start()
+    }
 }
 
 #[cfg(test)]
@@ -187,6 +236,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(467835));
     }
 }
