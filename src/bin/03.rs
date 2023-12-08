@@ -46,23 +46,6 @@ impl EngineSchematicWindow {
         self.overflow_index = next_overflow_index;
     }
 
-    fn get_row_middle(&self) -> &EngineSchematicRow {
-        let index = (self.overflow_index + self.rows.len() - 2) % self.rows.len();
-        &self.rows[index]
-    }
-
-    fn get_row_bottom(&self) -> &EngineSchematicRow {
-        &self.rows[self.overflow_index]
-    }
-
-    fn get_symbol_ranges_from_middle_row(&self) -> Vec<std::ops::RangeInclusive<usize>> {
-        self.get_row_middle()
-            .symbol_indices
-            .iter()
-            .map(|index| index - 1..=index + 1)
-            .collect()
-    }
-
     fn mark_part_numbers(&mut self) {
         let symbol_ranges = self.get_symbol_ranges_from_middle_row();
 
@@ -94,6 +77,19 @@ impl EngineSchematicWindow {
         }
     }
 
+    fn get_symbol_ranges_from_middle_row(&self) -> Vec<std::ops::RangeInclusive<usize>> {
+        self.get_row_middle()
+            .symbol_indices
+            .iter()
+            .map(|index| index - 1..=index + 1)
+            .collect()
+    }
+
+    fn get_row_middle(&self) -> &EngineSchematicRow {
+        let index = (self.overflow_index + self.rows.len() - 2) % self.rows.len();
+        &self.rows[index]
+    }
+
     fn sum_row_bottom_part_numbers(&self) -> u32 {
         self.get_row_bottom()
             .numbers
@@ -101,6 +97,10 @@ impl EngineSchematicWindow {
             .filter(|number| number.is_part_number)
             .map(|number| number.value)
             .sum()
+    }
+
+    fn get_row_bottom(&self) -> &EngineSchematicRow {
+        &self.rows[self.overflow_index]
     }
 }
 
