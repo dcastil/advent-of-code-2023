@@ -6,12 +6,12 @@ pub fn part_one(input: &str) -> Option<u32> {
     for line in input.lines() {
         let first_number = line
             .chars()
-            .find(|&c| c.is_numeric())
+            .find(|&c| c.is_ascii_digit())
             .map(|c| c.to_digit(10).unwrap());
         let last_number = line
             .chars()
             .rev()
-            .find(|&c| c.is_numeric())
+            .find(|&c| c.is_ascii_digit())
             .map(|c| c.to_digit(10).unwrap());
 
         if let (Some(first), Some(last)) = (first_number, last_number) {
@@ -97,7 +97,7 @@ fn get_string_positions<const N: usize>(
 
 fn get_first_numeric_position(line: &str) -> Option<NumberPosition> {
     for (index, character) in line.chars().enumerate() {
-        if character.is_numeric() {
+        if character.is_ascii_digit() {
             return Some(NumberPosition {
                 number: character.to_digit(10).unwrap(),
                 index,
@@ -110,7 +110,7 @@ fn get_first_numeric_position(line: &str) -> Option<NumberPosition> {
 
 fn get_last_numeric_position(line: &str) -> Option<NumberPosition> {
     for (index, character) in line.chars().rev().enumerate() {
-        if character.is_numeric() {
+        if character.is_ascii_digit() {
             return Some(NumberPosition {
                 number: character.to_digit(10).unwrap(),
                 index: line.len() - 1 - index,
