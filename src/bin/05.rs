@@ -1,12 +1,11 @@
-use std::cmp::Ordering;
+use std::cmp::{self, Ordering};
 use std::ops::Range;
 
 advent_of_code::solution!(5);
 
 pub fn part_one(input: &str) -> Option<i64> {
     let mut input_iterator = input.split("\n\n");
-
-    let mut current_values: Vec<i64> = parse_seed_values(input_iterator.next().unwrap());
+    let mut current_values = parse_seed_values(input_iterator.next().unwrap());
 
     for category_string in input_iterator {
         let category_map = CategoryMap::from_string(category_string);
@@ -19,8 +18,20 @@ pub fn part_one(input: &str) -> Option<i64> {
     current_values.iter().min().copied()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<i64> {
+    let mut input_iterator = input.split("\n\n");
+    let mut current_ranges = parse_seed_ranges(input_iterator.next().unwrap());
+
+    for category_string in input_iterator {
+        let category_map = CategoryMap::from_string(category_string);
+
+        current_ranges = current_ranges
+            .iter()
+            .flat_map(|range| category_map.map_range(range))
+            .collect();
+    }
+
+    current_ranges.iter().map(|range| range.start).min()
 }
 
 fn parse_seed_values(line: &str) -> Vec<i64> {
@@ -29,6 +40,22 @@ fn parse_seed_values(line: &str) -> Vec<i64> {
         .unwrap()
         .split(' ')
         .map(|seed_string| seed_string.parse::<i64>().unwrap())
+        .collect()
+}
+
+fn parse_seed_ranges(line: &str) -> Vec<Range<i64>> {
+    let seeds_split = line.split(": ").nth(1).unwrap().split(' ');
+
+    seeds_split
+        .clone()
+        .step_by(2)
+        .zip(seeds_split.skip(1).step_by(2))
+        .map(|(start_string, length_string)| {
+            let start: i64 = start_string.parse().unwrap();
+            let length: i64 = length_string.parse().unwrap();
+
+            start..start + length
+        })
         .collect()
 }
 
@@ -60,7 +87,15 @@ impl CategoryMap {
     }
 
     fn map_value(&self, value: i64) -> i64 {
-        if let Ok(index) = self.value_maps_sorted.binary_search_by(|value_map| {
+        if let Ok(index) = self.bindary_search_value_map(value) {
+            return value + self.value_maps_sorted[index].translate_by;
+        }
+
+        value
+    }
+
+    fn bindary_search_value_map(&self, value: i64) -> Result<usize, usize> {
+        self.value_maps_sorted.binary_search_by(|value_map| {
             if value_map.source_range.start > value {
                 Ordering::Greater
             } else if value_map.source_range.end <= value {
@@ -68,11 +103,43 @@ impl CategoryMap {
             } else {
                 Ordering::Equal
             }
-        }) {
-            return value + self.value_maps_sorted[index].translate_by;
+        })
+    }
+
+    fn map_range(&self, range: &Range<i64>) -> Vec<Range<i64>> {
+        let value_maps_slice_start = self
+            .bindary_search_value_map(range.start)
+            .unwrap_or_else(|index| index);
+        let value_maps_slice_end = match self.bindary_search_value_map(range.end - 1) {
+            Ok(index) => index + 1,
+            Err(index) => index,
+        };
+
+        let value_maps = &self.value_maps_sorted[value_maps_slice_start..value_maps_slice_end];
+
+        let mut next_ranges = Vec::new();
+        let mut current_value = range.start;
+
+        for value_map in value_maps {
+            if current_value < value_map.source_range.start {
+                next_ranges.push(current_value..value_map.source_range.start);
+
+                current_value = value_map.source_range.start;
+            }
+
+            let next_value = cmp::min(value_map.source_range.end, range.end);
+
+            next_ranges
+                .push(current_value + value_map.translate_by..next_value + value_map.translate_by);
+
+            current_value = next_value;
         }
 
-        value
+        if current_value < range.end {
+            next_ranges.push(current_value..range.end);
+        }
+
+        next_ranges
     }
 }
 
@@ -109,6 +176,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(46));
     }
 }
