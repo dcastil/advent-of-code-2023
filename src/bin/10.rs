@@ -204,10 +204,9 @@ impl Grid<'_> {
             return;
         }
 
-        let coordinate = position.next_coordinate_unchecked();
-        let previous_direction = position.direction.inverse();
+        if visited_coordinates.insert(position.next_coordinate_unchecked()) {
+            let previous_direction = position.direction.inverse();
 
-        if visited_coordinates.insert(coordinate) {
             for direction in [
                 Direction::Up,
                 Direction::Down,
