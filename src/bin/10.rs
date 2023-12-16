@@ -89,24 +89,16 @@ impl Grid<'_> {
         let next_coordinate = position.get_next_coordinate_unchecked();
 
         self.get_char(next_coordinate).map_or(false, |&character| {
-            if character == b'.' {
-                false
-            } else {
-                Direction::get_from_pipe_char(character).contains(&position.direction.get_inverse())
-            }
+            position.direction.is_connected(character)
         })
     }
 
     fn get_next_position(&self, position: &Position) -> Position {
         let next_coordinate = position.get_next_coordinate_unchecked();
-
-        let inverse_direction = position.direction.get_inverse();
-
-        let next_direction =
-            Direction::get_from_pipe_char(*self.get_char_unchecked(&next_coordinate))
-                .into_iter()
-                .find(|direction| *direction != inverse_direction)
-                .unwrap();
+        let next_direction = position
+            .direction
+            .get_next(*self.get_char_unchecked(&next_coordinate))
+            .unwrap();
 
         Position::new(next_coordinate, next_direction)
     }
@@ -187,6 +179,22 @@ impl Direction {
             b'F' => [Direction::Down, Direction::Right],
             _ => panic!("Invalid pipe character"),
         }
+    }
+
+    fn is_connected(&self, character: u8) -> bool {
+        if character == b'.' {
+            false
+        } else {
+            Direction::get_from_pipe_char(character).contains(&self.get_inverse())
+        }
+    }
+
+    fn get_next(&self, character: u8) -> Option<Direction> {
+        let inverse_direction = self.get_inverse();
+
+        Direction::get_from_pipe_char(character)
+            .into_iter()
+            .find(|direction| *direction != inverse_direction)
     }
 
     fn get_inverse(&self) -> Direction {
