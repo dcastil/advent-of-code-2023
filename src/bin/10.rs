@@ -88,17 +88,13 @@ impl Grid<'_> {
 
         let next_coordinate = position.get_next_coordinate_unchecked();
 
-        let next_character = self.get_char(next_coordinate);
-
-        if let Some(&character) = next_character {
+        self.get_char(next_coordinate).map_or(false, |&character| {
             if character == b'.' {
                 false
             } else {
                 Direction::get_from_pipe_char(character).contains(&position.direction.get_inverse())
             }
-        } else {
-            false
-        }
+        })
     }
 
     fn get_next_position(&self, position: &Position) -> Position {
@@ -106,15 +102,11 @@ impl Grid<'_> {
 
         let inverse_direction = position.direction.get_inverse();
 
-        let [direction_a, direction_b] =
-            Direction::get_from_pipe_char(*self.get_char_unchecked(&next_coordinate));
-        // Direction::get_from_pipe_char(self.grid[next_y].as_bytes()[next_x]);
-
-        let next_direction = if direction_a == inverse_direction {
-            direction_b
-        } else {
-            direction_a
-        };
+        let next_direction =
+            Direction::get_from_pipe_char(*self.get_char_unchecked(&next_coordinate))
+                .into_iter()
+                .find(|direction| *direction != inverse_direction)
+                .unwrap();
 
         Position::new(next_coordinate, next_direction)
     }
@@ -205,11 +197,6 @@ impl Direction {
             Direction::Right => Direction::Left,
         }
     }
-}
-
-struct Path {
-    coordinate: Coordinate,
-    direction: Direction,
 }
 
 #[cfg(test)]
