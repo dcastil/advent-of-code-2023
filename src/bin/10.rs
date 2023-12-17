@@ -3,7 +3,7 @@ use std::collections::HashSet;
 advent_of_code::solution!(10);
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let map_grid = Grid::new(input);
+    let map_grid = Grid::from_input(input);
 
     let mut positions = map_grid.start_positions();
     let mut step_count = 0;
@@ -22,7 +22,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<usize> {
-    let map_grid = Grid::new(input);
+    let map_grid = Grid::from_input(input);
     let mut visited_coordinates = HashSet::new();
 
     let mut current_position = map_grid.start_positions().into_iter().next().unwrap();
@@ -80,7 +80,7 @@ struct Grid<'a> {
 }
 
 impl Grid<'_> {
-    fn new(input: &str) -> Grid {
+    fn from_input(input: &str) -> Grid {
         Grid {
             grid: input.lines().collect(),
         }
