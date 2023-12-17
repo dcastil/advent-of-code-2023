@@ -5,22 +5,13 @@ advent_of_code::solution!(11);
 pub fn part_one(input: &str) -> Option<usize> {
     let grid = GalaxyGrid::from_input(input);
 
-    let mut processed_galaxies = Vec::new();
-    let mut distances_sum = 0;
-
-    for galaxy in grid.galaxies() {
-        for processed_galaxy in processed_galaxies.iter() {
-            distances_sum += galaxy.distance(processed_galaxy);
-        }
-
-        processed_galaxies.push(galaxy);
-    }
-
-    Some(distances_sum)
+    Some(grid.sum_of_galaxy_distances(2))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let grid = GalaxyGrid::from_input(input);
+
+    Some(grid.sum_of_galaxy_distances(1_000_000))
 }
 
 struct GalaxyGrid<'a> {
@@ -34,7 +25,22 @@ impl GalaxyGrid<'_> {
         }
     }
 
-    fn galaxies(&self) -> Vec<Galaxy> {
+    fn sum_of_galaxy_distances(&self, expansion_factor: usize) -> usize {
+        let mut processed_galaxies = Vec::new();
+        let mut distances_sum = 0;
+
+        for galaxy in self.galaxies(expansion_factor) {
+            for processed_galaxy in processed_galaxies.iter() {
+                distances_sum += galaxy.distance(processed_galaxy);
+            }
+
+            processed_galaxies.push(galaxy);
+        }
+
+        distances_sum
+    }
+
+    fn galaxies(&self, expansion_factor: usize) -> Vec<Galaxy> {
         let mut galaxies = Vec::new();
         let xs_without_galaxies: HashSet<_> = self.xs_without_galaxies().collect();
 
@@ -46,7 +52,7 @@ impl GalaxyGrid<'_> {
 
             for (x_index, character) in line.as_bytes().iter().enumerate() {
                 if xs_without_galaxies.contains(&x_index) {
-                    current_x += 2;
+                    current_x += expansion_factor;
                     continue;
                 }
 
@@ -59,7 +65,7 @@ impl GalaxyGrid<'_> {
                 current_x += 1;
             }
 
-            current_y += if y_has_galaxies { 1 } else { 2 };
+            current_y += if y_has_galaxies { 1 } else { expansion_factor };
         }
 
         galaxies
