@@ -115,21 +115,22 @@ impl RecordSlice<'_> {
         {
             if let Some(field) = self.sequence.get(index_end) {
                 if field.can_be_empty() {
-                    Some(RecordSlice {
-                        sequence: &self.sequence[index_end + 1..],
-                        fill_counts: &self.fill_counts[1..],
-                    })
+                    Some(self.next(index_end + 1))
                 } else {
                     None
                 }
             } else {
-                Some(RecordSlice {
-                    sequence: &self.sequence[index_end..],
-                    fill_counts: &self.fill_counts[1..],
-                })
+                Some(self.next(index_end))
             }
         } else {
             None
+        }
+    }
+
+    fn next(&self, index: usize) -> RecordSlice {
+        RecordSlice {
+            sequence: &self.sequence[index..],
+            fill_counts: &self.fill_counts[1..],
         }
     }
 }
