@@ -232,6 +232,7 @@ impl RecordSlice<'_> {
         }
 
         for fill_count in self.fill_counts {
+            key.push(' ');
             key.push_str(&fill_count.to_string());
         }
 
