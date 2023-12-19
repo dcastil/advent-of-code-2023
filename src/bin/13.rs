@@ -5,10 +5,11 @@ pub fn part_one(input: &str) -> Option<usize> {
         .split("\n\n")
         .map(|pattern_string| {
             let matrix = PatternMatrix::from_pattern_string(pattern_string);
+            let symmetry = matrix.symmetry_with_exceptions(0);
 
-            match matrix.symmetry_with_exceptions(0) {
-                Symmetry::Vertical { index, .. } => index,
-                Symmetry::Horizontal { index, .. } => index * 100,
+            match symmetry.direction {
+                Direction::Vertical => symmetry.index,
+                Direction::Horizontal => symmetry.index * 100,
             }
         })
         .sum();
@@ -21,10 +22,11 @@ pub fn part_two(input: &str) -> Option<usize> {
         .split("\n\n")
         .map(|pattern_string| {
             let matrix = PatternMatrix::from_pattern_string(pattern_string);
+            let symmetry = matrix.symmetry_with_exceptions(1);
 
-            match matrix.symmetry_with_exceptions(1) {
-                Symmetry::Vertical { index, .. } => index,
-                Symmetry::Horizontal { index, .. } => index * 100,
+            match symmetry.direction {
+                Direction::Vertical => symmetry.index,
+                Direction::Horizontal => symmetry.index * 100,
             }
         })
         .sum();
@@ -53,7 +55,7 @@ impl PatternMatrix {
             symmetries_vertical.retain_mut(|symmetry| {
                 self.check_symmetry_at_line(symmetry, index);
 
-                symmetry.exceptions_count() <= exceptions_count
+                symmetry.exceptions_count <= exceptions_count
             });
 
             if symmetries_vertical.is_empty() {
@@ -63,7 +65,7 @@ impl PatternMatrix {
 
         if let Some(symmetry) = symmetries_vertical
             .into_iter()
-            .find(|symmetry| symmetry.exceptions_count() == exceptions_count)
+            .find(|symmetry| symmetry.exceptions_count == exceptions_count)
         {
             return symmetry;
         }
@@ -74,7 +76,7 @@ impl PatternMatrix {
             symmetries_horizontal.retain_mut(|symmetry| {
                 self.check_symmetry_at_line(symmetry, index);
 
-                symmetry.exceptions_count() <= exceptions_count
+                symmetry.exceptions_count <= exceptions_count
             });
 
             if symmetries_horizontal.is_empty() {
@@ -84,7 +86,7 @@ impl PatternMatrix {
 
         if let Some(symmetry) = symmetries_horizontal
             .into_iter()
-            .find(|symmetry| symmetry.exceptions_count() == exceptions_count)
+            .find(|symmetry| symmetry.exceptions_count == exceptions_count)
         {
             return symmetry;
         }
@@ -93,9 +95,11 @@ impl PatternMatrix {
     }
 
     fn check_symmetry_at_line(&self, symmetry: &mut Symmetry, line_index: usize) {
-        let range_end = match *symmetry {
-            Symmetry::Vertical { index, .. } => index.min(self.length_horizontal() - index),
-            Symmetry::Horizontal { index, .. } => index.min(self.length_vertical() - index),
+        let range_end = match symmetry.direction {
+            Direction::Vertical => symmetry
+                .index
+                .min(self.length_horizontal() - symmetry.index),
+            Direction::Horizontal => symmetry.index.min(self.length_vertical() - symmetry.index),
         };
 
         for distance in 0..range_end {
@@ -111,27 +115,27 @@ impl PatternMatrix {
         line_index: usize,
         distance: usize,
     ) -> bool {
-        match *symmetry {
-            Symmetry::Vertical { index, .. } => {
-                self.matrix[line_index][index - distance - 1]
-                    == self.matrix[line_index][index + distance]
+        match symmetry.direction {
+            Direction::Vertical => {
+                self.matrix[line_index][symmetry.index - distance - 1]
+                    == self.matrix[line_index][symmetry.index + distance]
             }
-            Symmetry::Horizontal { index, .. } => {
-                self.matrix[index - distance - 1][line_index]
-                    == self.matrix[index + distance][line_index]
+            Direction::Horizontal => {
+                self.matrix[symmetry.index - distance - 1][line_index]
+                    == self.matrix[symmetry.index + distance][line_index]
             }
         }
     }
 
     fn possible_symmetries_vertical(&self) -> Vec<Symmetry> {
         (1..self.length_horizontal())
-            .map(Symmetry::vertical)
+            .map(Symmetry::new_vertical)
             .collect()
     }
 
     fn possible_symmetries_horizontal(&self) -> Vec<Symmetry> {
         (1..self.length_vertical())
-            .map(Symmetry::horizontal)
+            .map(Symmetry::new_horizontal)
             .collect()
     }
 
@@ -162,53 +166,38 @@ impl Pattern {
 }
 
 #[derive(Clone, Debug)]
-enum Symmetry {
-    Vertical {
-        index: usize,
-        exceptions_count: usize,
-    },
-    Horizontal {
-        index: usize,
-        exceptions_count: usize,
-    },
+struct Symmetry {
+    direction: Direction,
+    index: usize,
+    exceptions_count: usize,
 }
 
 impl Symmetry {
-    fn vertical(index: usize) -> Symmetry {
-        Symmetry::Vertical {
+    fn new_vertical(index: usize) -> Symmetry {
+        Symmetry {
+            direction: Direction::Vertical,
             index,
             exceptions_count: 0,
         }
     }
 
-    fn horizontal(index: usize) -> Symmetry {
-        Symmetry::Horizontal {
+    fn new_horizontal(index: usize) -> Symmetry {
+        Symmetry {
+            direction: Direction::Horizontal,
             index,
             exceptions_count: 0,
-        }
-    }
-
-    fn exceptions_count(&self) -> usize {
-        match self {
-            Symmetry::Vertical {
-                exceptions_count, ..
-            } => *exceptions_count,
-            Symmetry::Horizontal {
-                exceptions_count, ..
-            } => *exceptions_count,
         }
     }
 
     fn increment_exceptions_count(&mut self) {
-        match self {
-            Symmetry::Vertical {
-                exceptions_count, ..
-            } => *exceptions_count += 1,
-            Symmetry::Horizontal {
-                exceptions_count, ..
-            } => *exceptions_count += 1,
-        }
+        self.exceptions_count += 1;
     }
+}
+
+#[derive(Clone, Debug)]
+enum Direction {
+    Vertical,
+    Horizontal,
 }
 
 #[cfg(test)]
