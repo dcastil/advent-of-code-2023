@@ -8,8 +8,13 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(contraption.tiles_visited(Path::new(0, 0, Direction::Right)))
 }
 
+/**
+ * Would be much more efficient to store how many tiles will be visited when starting at each coordinate I visited previously and cache those values between calls to `contraption.tiles_visited`.
+ * The current implementation is fast enough and didn't require any significant code changes from part one, so I didn't bother.
+ */
 pub fn part_two(input: &str) -> Option<usize> {
     let contraption = Contraption::from_input(input);
+    // Assuming all lines have the same length
     let x_len = contraption.grid[0].len();
     let y_len = contraption.grid.len();
 
