@@ -5,11 +5,45 @@ advent_of_code::solution!(16);
 pub fn part_one(input: &str) -> Option<usize> {
     let contraption = Contraption::from_input(input);
 
-    Some(contraption.tiles_visited())
+    Some(contraption.tiles_visited(Path::new(0, 0, Direction::Right)))
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let contraption = Contraption::from_input(input);
+    let x_len = contraption.grid[0].len();
+    let y_len = contraption.grid.len();
+
+    let mut max_tiles_visited = 0;
+
+    for y in 0..y_len {
+        let tiles_visited_from_left = contraption.tiles_visited(Path::new(0, y, Direction::Right));
+        let tiles_visited_from_right =
+            contraption.tiles_visited(Path::new(x_len - 1, y, Direction::Left));
+
+        if tiles_visited_from_left > max_tiles_visited {
+            max_tiles_visited = tiles_visited_from_left;
+        }
+
+        if tiles_visited_from_right > max_tiles_visited {
+            max_tiles_visited = tiles_visited_from_right;
+        }
+    }
+
+    for x in 0..x_len {
+        let tiles_visited_from_top = contraption.tiles_visited(Path::new(x, 0, Direction::Down));
+        let tiles_visited_from_bottom =
+            contraption.tiles_visited(Path::new(x, y_len - 1, Direction::Up));
+
+        if tiles_visited_from_top > max_tiles_visited {
+            max_tiles_visited = tiles_visited_from_top;
+        }
+
+        if tiles_visited_from_bottom > max_tiles_visited {
+            max_tiles_visited = tiles_visited_from_bottom;
+        }
+    }
+
+    Some(max_tiles_visited)
 }
 
 struct Contraption<'a> {
@@ -23,10 +57,9 @@ impl Contraption<'_> {
         }
     }
 
-    fn tiles_visited(&self) -> usize {
+    fn tiles_visited(&self, start_path: Path) -> usize {
         let mut visited_paths = HashSet::new();
-
-        let mut paths = vec![Path::start()];
+        let mut paths = vec![start_path];
 
         while let Some(path) = paths.pop() {
             if visited_paths.contains(&path) {
@@ -103,10 +136,10 @@ struct Path {
 }
 
 impl Path {
-    fn start() -> Path {
+    fn new(x: usize, y: usize, direction: Direction) -> Path {
         Path {
-            coordinate: Coordinate { x: 0, y: 0 },
-            entering_direction: Direction::Right,
+            coordinate: Coordinate { x, y },
+            entering_direction: direction,
         }
     }
 
@@ -162,6 +195,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(51));
     }
 }
