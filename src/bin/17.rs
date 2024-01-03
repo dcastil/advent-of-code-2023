@@ -53,7 +53,7 @@ impl Graph {
 
         let start_position = Position {
             coordinate: start.clone(),
-            enter_direction: Direction::Down,
+            enter_direction: Direction::None,
             same_direction_count: 0,
         };
 
@@ -146,6 +146,7 @@ impl Graph {
             Direction::Right => {
                 node.position.coordinate.x != self.grid[node.position.coordinate.y].len() - 1
             }
+            Direction::None => false,
         }
     }
 
@@ -246,6 +247,7 @@ enum Direction {
     Down,
     Left,
     Right,
+    None,
 }
 
 impl Direction {
@@ -255,6 +257,7 @@ impl Direction {
             Direction::Down => Direction::Up,
             Direction::Left => Direction::Right,
             Direction::Right => Direction::Left,
+            Direction::None => Direction::None,
         }
     }
 }
@@ -272,6 +275,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(94));
     }
 }
