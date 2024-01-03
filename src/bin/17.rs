@@ -6,21 +6,25 @@ use std::{
 advent_of_code::solution!(17);
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let graph = Graph::from_input(input);
+    let graph = Graph::from_input(input, 1, 3);
 
     graph.smallest_path_cost_across()
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<usize> {
+    let graph = Graph::from_input(input, 4, 10);
+
+    graph.smallest_path_cost_across()
 }
 
 struct Graph {
     grid: Vec<Vec<usize>>,
+    same_direction_min: usize,
+    same_direction_max: usize,
 }
 
 impl Graph {
-    fn from_input(input: &str) -> Graph {
+    fn from_input(input: &str, same_direction_min: usize, same_direction_max: usize) -> Graph {
         let grid = input
             .lines()
             .map(|line| {
@@ -30,7 +34,11 @@ impl Graph {
             })
             .collect();
 
-        Graph { grid }
+        Graph {
+            grid,
+            same_direction_min,
+            same_direction_max,
+        }
     }
 
     fn smallest_path_cost_across(&self) -> Option<usize> {
@@ -54,7 +62,7 @@ impl Graph {
         let start_position = Position {
             coordinate: start.clone(),
             enter_direction: Direction::None,
-            same_direction_count: 0,
+            same_direction_count: 1,
         };
 
         min_costs.insert(start_position.clone(), 0);
@@ -117,9 +125,10 @@ impl Graph {
         ]
         .into_iter()
         .filter_map(move |direction| {
-            if self.has_neighbor(node, direction) {
-                let position = node.position.next(direction);
-                let cost = node.cost + self.grid[position.coordinate.y][position.coordinate.x];
+            if let Some((position, cost_to_position)) =
+                self.get_next_position(&node.position, direction)
+            {
+                let cost = node.cost + cost_to_position;
 
                 Some(Node {
                     cost,
@@ -132,22 +141,58 @@ impl Graph {
         })
     }
 
-    fn has_neighbor(&self, node: &Node, direction: Direction) -> bool {
-        if node.position.enter_direction == direction && node.position.same_direction_count == 2
-            || node.position.enter_direction == direction.opposite()
-        {
-            return false;
+    fn get_next_position(
+        &self,
+        position: &Position,
+        direction: Direction,
+    ) -> Option<(Position, usize)> {
+        let is_same_direction = direction == position.enter_direction;
+        let is_overflowing_direction_max =
+            is_same_direction && position.same_direction_count == self.same_direction_max;
+
+        if is_overflowing_direction_max {
+            return None;
         }
 
-        match direction {
-            Direction::Up => node.position.coordinate.y != 0,
-            Direction::Down => node.position.coordinate.y != self.grid.len() - 1,
-            Direction::Left => node.position.coordinate.x != 0,
+        let is_backwards_direction = direction == position.enter_direction.opposite();
+
+        if is_backwards_direction {
+            return None;
+        }
+
+        let next_position_distance = if is_same_direction {
+            1
+        } else {
+            self.same_direction_min
+        };
+
+        let is_next_position_outside_grid = match direction {
+            Direction::Up => position.coordinate.y < next_position_distance,
+            Direction::Down => position.coordinate.y + next_position_distance > self.grid.len() - 1,
+            Direction::Left => position.coordinate.x < next_position_distance,
             Direction::Right => {
-                node.position.coordinate.x != self.grid[node.position.coordinate.y].len() - 1
+                position.coordinate.x + next_position_distance
+                    > self.grid[position.coordinate.y].len() - 1
             }
             Direction::None => false,
+        };
+
+        if is_next_position_outside_grid {
+            return None;
         }
+
+        let cost_to_next_position: usize = (1..=next_position_distance)
+            .map(|distance| self.cost(&position.coordinate.next(direction, distance)))
+            .sum();
+
+        Some((
+            position.next(direction, next_position_distance),
+            cost_to_next_position,
+        ))
+    }
+
+    fn cost(&self, coordinate: &Coordinate) -> usize {
+        self.grid[coordinate.y][coordinate.x]
     }
 
     fn print_path(&self, node: &Node, position_origins: &HashMap<Position, Position>) {
@@ -182,16 +227,16 @@ struct Coordinate {
 }
 
 impl Coordinate {
-    fn next(&self, direction: Direction) -> Coordinate {
+    fn next(&self, direction: Direction, distance: usize) -> Coordinate {
         Coordinate {
             x: match direction {
-                Direction::Left => self.x - 1,
-                Direction::Right => self.x + 1,
+                Direction::Left => self.x - distance,
+                Direction::Right => self.x + distance,
                 _ => self.x,
             },
             y: match direction {
-                Direction::Up => self.y - 1,
-                Direction::Down => self.y + 1,
+                Direction::Up => self.y - distance,
+                Direction::Down => self.y + distance,
                 _ => self.y,
             },
         }
@@ -202,18 +247,18 @@ impl Coordinate {
 struct Position {
     coordinate: Coordinate,
     enter_direction: Direction,
-    same_direction_count: i8,
+    same_direction_count: usize,
 }
 
 impl Position {
-    fn next(&self, direction: Direction) -> Position {
+    fn next(&self, direction: Direction, distance: usize) -> Position {
         Position {
-            coordinate: self.coordinate.next(direction),
+            coordinate: self.coordinate.next(direction, distance),
             enter_direction: direction,
-            same_direction_count: if self.enter_direction == direction {
-                self.same_direction_count + 1
+            same_direction_count: if direction == self.enter_direction {
+                self.same_direction_count + distance
             } else {
-                0
+                distance
             },
         }
     }
