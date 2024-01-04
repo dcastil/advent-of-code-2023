@@ -4,6 +4,19 @@
 
 Solutions for [Advent of Code](https://adventofcode.com/) in [Rust](https://www.rust-lang.org/).
 
+## Support resources
+
+-   Support for algorithms
+    -   [Advent of Code Reddit](https://www.reddit.com/r/adventofcode)
+    -   [Awesome Advent of Code](https://github.com/Bogdanp/awesome-advent-of-code)
+-   Support for Rust
+    -   [The Rust Programming Language](https://doc.rust-lang.org/book)
+    -   [Rust by Example](https://doc.rust-lang.org/rust-by-example)
+    -   [The Rust Reference](https://doc.rust-lang.org/reference)
+    -   [The Cargo Book](https://doc.rust-lang.org/cargo)
+    -   [The Rust Standard Library](https://doc.rust-lang.org/std)
+    -   [The Rustonomicon](https://doc.rust-lang.org/nomicon)
+
 <!--- advent_readme_stars table --->
 
 <!--- benchmarking table --->
