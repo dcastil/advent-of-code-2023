@@ -1,14 +1,13 @@
-use std::{collections::HashSet, u32};
+use std::collections::HashSet;
 
 advent_of_code::solution!(18);
 
 pub fn part_one(input: &str) -> Option<usize> {
-    let instructions: Vec<_> = input.lines().map(Instruction::from_line).collect();
-    let start_coordiante = Coordinate { x: 0, y: 0 };
+    let instructions: Vec<_> = input.lines().map(Instruction::from_line_1).collect();
 
     let mut visited_coordinates = HashSet::new();
 
-    let mut current_coordinate = start_coordiante.clone();
+    let mut current_coordinate = Coordinate { x: 0, y: 0 };
     let mut current_direction = instructions[0].direction;
     let mut right_turns = 0;
 
@@ -17,7 +16,7 @@ pub fn part_one(input: &str) -> Option<usize> {
         current_direction = instruction.direction;
 
         for _ in 1..=instruction.distance {
-            current_coordinate = current_coordinate.next(current_direction);
+            current_coordinate = current_coordinate.next(current_direction, 1);
             visited_coordinates.insert(current_coordinate.clone());
         }
     }
@@ -25,7 +24,7 @@ pub fn part_one(input: &str) -> Option<usize> {
     let is_clockwise = right_turns > 0;
 
     for instruction in instructions {
-        current_coordinate = current_coordinate.next(instruction.direction);
+        current_coordinate = current_coordinate.next(instruction.direction, 1);
         visit_inside_tiles(
             current_direction,
             instruction.direction,
@@ -37,7 +36,7 @@ pub fn part_one(input: &str) -> Option<usize> {
         current_direction = instruction.direction;
 
         for _ in 2..=instruction.distance {
-            current_coordinate = current_coordinate.next(current_direction);
+            current_coordinate = current_coordinate.next(current_direction, 1);
             visit_inside_tiles(
                 current_direction,
                 current_direction,
@@ -51,8 +50,22 @@ pub fn part_one(input: &str) -> Option<usize> {
     Some(visited_coordinates.len())
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<i64> {
+    let mut current_coordinate = Coordinate { x: 0, y: 0 };
+    let mut area = 0;
+
+    for instruction in input.lines().map(Instruction::from_line_2) {
+        let next_coordinate = current_coordinate.next(instruction.direction, instruction.distance);
+
+        // Shoelace formula: https://en.wikipedia.org/wiki/Shoelace_formula
+        area += (current_coordinate.x * next_coordinate.y
+            - next_coordinate.x * current_coordinate.y)
+            + instruction.distance;
+
+        current_coordinate = next_coordinate;
+    }
+
+    Some(area.abs() / 2 + 1)
 }
 
 fn visit_inside_tiles(
@@ -75,11 +88,11 @@ fn visit_tiles_recursively(
     direction: Direction,
     visited_coordinates: &mut HashSet<Coordinate>,
 ) {
-    let coordinate = previous_coordinate.next(direction);
+    let coordinate = previous_coordinate.next(direction, 1);
 
     if visited_coordinates.insert(coordinate) {
         let direction_back = direction.reverse();
-        let coordinate = previous_coordinate.next(direction);
+        let coordinate = previous_coordinate.next(direction, 1);
 
         for direction in [
             Direction::Up,
@@ -96,18 +109,25 @@ fn visit_tiles_recursively(
 
 struct Instruction {
     direction: Direction,
-    distance: i32,
-    color: u32,
+    distance: i64,
 }
 
 impl Instruction {
-    fn from_line(line: &str) -> Instruction {
+    fn from_line_1(line: &str) -> Instruction {
         let mut split_iterator = line.split(' ');
 
         Instruction {
-            direction: Direction::from_string(split_iterator.next().unwrap()),
+            direction: Direction::from_string_1(split_iterator.next().unwrap()),
             distance: split_iterator.next().unwrap().parse().unwrap(),
-            color: u32::from_str_radix(&split_iterator.next().unwrap()[2..8], 16).unwrap(),
+        }
+    }
+
+    fn from_line_2(line: &str) -> Instruction {
+        let string = line.split(' ').nth(2).unwrap();
+
+        Instruction {
+            direction: Direction::from_string_2(&string[7..8]),
+            distance: i64::from_str_radix(&string[2..7], 16).unwrap(),
         }
     }
 }
@@ -121,12 +141,22 @@ enum Direction {
 }
 
 impl Direction {
-    fn from_string(string: &str) -> Direction {
+    fn from_string_1(string: &str) -> Direction {
         match string {
             "U" => Direction::Up,
             "D" => Direction::Down,
             "L" => Direction::Left,
             "R" => Direction::Right,
+            _ => panic!("Invalid direction"),
+        }
+    }
+
+    fn from_string_2(string: &str) -> Direction {
+        match string {
+            "0" => Direction::Right,
+            "1" => Direction::Down,
+            "2" => Direction::Left,
+            "3" => Direction::Up,
             _ => panic!("Invalid direction"),
         }
     }
@@ -197,21 +227,21 @@ impl Direction {
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 struct Coordinate {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 impl Coordinate {
-    fn next(&self, direction: Direction) -> Coordinate {
+    fn next(&self, direction: Direction, distance: i64) -> Coordinate {
         Coordinate {
             x: match direction {
-                Direction::Left => self.x - 1,
-                Direction::Right => self.x + 1,
+                Direction::Left => self.x - distance,
+                Direction::Right => self.x + distance,
                 _ => self.x,
             },
             y: match direction {
-                Direction::Up => self.y - 1,
-                Direction::Down => self.y + 1,
+                Direction::Up => self.y - distance,
+                Direction::Down => self.y + distance,
                 _ => self.y,
             },
         }
@@ -231,6 +261,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(952_408_144_115));
     }
 }
