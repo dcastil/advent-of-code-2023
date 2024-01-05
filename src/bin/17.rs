@@ -154,7 +154,7 @@ impl Graph {
             return None;
         }
 
-        let is_backwards_direction = direction == position.enter_direction.opposite();
+        let is_backwards_direction = direction == position.enter_direction.reverse();
 
         if is_backwards_direction {
             return None;
@@ -296,7 +296,7 @@ enum Direction {
 }
 
 impl Direction {
-    fn opposite(&self) -> Direction {
+    fn reverse(&self) -> Direction {
         match self {
             Direction::Up => Direction::Down,
             Direction::Down => Direction::Up,

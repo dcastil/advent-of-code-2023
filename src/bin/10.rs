@@ -205,7 +205,7 @@ impl Grid<'_> {
         }
 
         if visited_coordinates.insert(position.next_coordinate_unchecked()) {
-            let previous_direction = position.direction.inverse();
+            let previous_direction = position.direction.reverse();
 
             for direction in [
                 Direction::Up,
@@ -308,19 +308,19 @@ impl Direction {
         if character == b'.' {
             false
         } else {
-            Direction::from_pipe_char(character).contains(&self.inverse())
+            Direction::from_pipe_char(character).contains(&self.reverse())
         }
     }
 
     fn next(&self, character: u8) -> Option<Direction> {
-        let inverse_direction = self.inverse();
+        let inverse_direction = self.reverse();
 
         Direction::from_pipe_char(character)
             .into_iter()
             .find(|direction| *direction != inverse_direction)
     }
 
-    fn inverse(&self) -> Direction {
+    fn reverse(&self) -> Direction {
         match self {
             Direction::Up => Direction::Down,
             Direction::Down => Direction::Up,
@@ -357,11 +357,11 @@ impl Direction {
         let mut current_turn_value = if is_clockwise {
             next_direction.turn_value()
         } else {
-            self.inverse().turn_value()
+            self.reverse().turn_value()
         };
 
         let end_turn_value = if is_clockwise {
-            self.inverse().turn_value()
+            self.reverse().turn_value()
         } else {
             next_direction.turn_value()
         };
