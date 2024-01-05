@@ -52,20 +52,20 @@ pub fn part_one(input: &str) -> Option<usize> {
 
 pub fn part_two(input: &str) -> Option<i64> {
     let mut current_coordinate = Coordinate { x: 0, y: 0 };
-    let mut area = 0;
+    let mut area_twice = 0;
 
     for instruction in input.lines().map(Instruction::from_line_2) {
         let next_coordinate = current_coordinate.next(instruction.direction, instruction.distance);
 
         // Shoelace formula: https://en.wikipedia.org/wiki/Shoelace_formula
-        area += (current_coordinate.x * next_coordinate.y
-            - next_coordinate.x * current_coordinate.y)
+        area_twice += current_coordinate.x * next_coordinate.y
+            - next_coordinate.x * current_coordinate.y
             + instruction.distance;
 
         current_coordinate = next_coordinate;
     }
 
-    Some(area.abs() / 2 + 1)
+    Some(area_twice.abs() / 2 + 1)
 }
 
 fn visit_inside_tiles(
