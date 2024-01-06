@@ -14,8 +14,8 @@ pub fn part_one(input: &str) -> Option<u32> {
         .filter_map(|object| {
             let mut command = &Command::Forward("in");
 
-            while let Command::Forward(command_name) = command {
-                let workflow = workflow_map.workflows.get(*command_name).unwrap();
+            while let Command::Forward(workflow_name) = command {
+                let workflow = workflow_map.get(workflow_name).unwrap();
 
                 command = &workflow
                     .rules
@@ -58,6 +58,10 @@ impl WorkflowMap<'_> {
                 .map(|workflow| (workflow.name, workflow))
                 .collect(),
         }
+    }
+
+    fn get(&self, name: &str) -> Option<&Workflow> {
+        self.workflows.get(name)
     }
 }
 
