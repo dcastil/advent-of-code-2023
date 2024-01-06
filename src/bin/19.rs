@@ -12,28 +12,10 @@ pub fn part_one(input: &str) -> Option<u32> {
         .lines()
         .map(Object::from_line)
         .filter_map(|object| {
-            let mut command = &Command::Forward("in");
-
-            while let Command::Forward(workflow_name) = command {
-                let workflow = workflow_map.get(workflow_name).unwrap();
-
-                command = &workflow
-                    .rules
-                    .iter()
-                    .find(|rule| {
-                        rule.condition.as_ref().map_or(true, |condition| {
-                            condition.ordering
-                                == object.value(&condition.property).cmp(&condition.cmp_value)
-                        })
-                    })
-                    .unwrap()
-                    .command;
-            }
-
-            match command {
-                Command::Accept => Some(object.x + object.m + object.a + object.s),
-                Command::Reject => None,
-                _ => panic!("Invalid command"),
+            if workflow_map.accepts(&object) {
+                Some(object.x + object.m + object.a + object.s)
+            } else {
+                None
             }
         })
         .sum();
@@ -60,8 +42,25 @@ impl WorkflowMap<'_> {
         }
     }
 
-    fn get(&self, name: &str) -> Option<&Workflow> {
-        self.workflows.get(name)
+    fn accepts(&self, object: &Object) -> bool {
+        let mut command = &Command::Forward("in");
+
+        while let Command::Forward(workflow_name) = command {
+            command = self.next_command(workflow_name, &object);
+        }
+
+        match command {
+            Command::Accept => true,
+            Command::Reject => false,
+            _ => panic!("Invalid command"),
+        }
+    }
+
+    fn next_command(&self, workflow_name: &str, object: &Object) -> &Command {
+        self.workflows
+            .get(workflow_name)
+            .unwrap()
+            .next_command(object)
     }
 }
 
@@ -83,6 +82,20 @@ impl Workflow<'_> {
                 .map(Rule::from_string)
                 .collect(),
         }
+    }
+
+    fn next_command(&self, object: &Object) -> &Command {
+        &self
+            .rules
+            .iter()
+            .find(|rule| {
+                rule.condition.as_ref().map_or(true, |condition| {
+                    condition.ordering
+                        == object.value(&condition.property).cmp(&condition.cmp_value)
+                })
+            })
+            .unwrap()
+            .command
     }
 }
 
@@ -170,17 +183,6 @@ struct Object {
 }
 
 impl Object {
-    fn value(&self, property: &Property) -> u32 {
-        match property {
-            Property::X => self.x,
-            Property::M => self.m,
-            Property::A => self.a,
-            Property::S => self.s,
-        }
-    }
-}
-
-impl Object {
     fn from_line(line: &str) -> Object {
         let mut line_iterator = line[1..line.len() - 1].split(',');
 
@@ -189,6 +191,15 @@ impl Object {
             m: line_iterator.next().unwrap()[2..].parse().unwrap(),
             a: line_iterator.next().unwrap()[2..].parse().unwrap(),
             s: line_iterator.next().unwrap()[2..].parse().unwrap(),
+        }
+    }
+
+    fn value(&self, property: &Property) -> u32 {
+        match property {
+            Property::X => self.x,
+            Property::M => self.m,
+            Property::A => self.a,
+            Property::S => self.s,
         }
     }
 }
