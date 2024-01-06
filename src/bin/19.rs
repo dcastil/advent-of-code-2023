@@ -67,58 +67,64 @@ impl WorkflowMap<'_> {
 struct Workflow<'a> {
     name: &'a str,
     rules: Vec<Rule<'a>>,
+    final_command: Command<'a>,
 }
 
 impl Workflow<'_> {
     fn from_line(line: &str) -> Workflow {
         let mut line_iterator = line.split('{');
+
         let name = line_iterator.next().unwrap();
         let rules_string = line_iterator.next().unwrap();
 
+        let mut rules_iterator = rules_string[..rules_string.len() - 1].split(',');
+
+        let final_command = Command::from_string(rules_iterator.next_back().unwrap());
+        let mut rules: Vec<_> = rules_iterator.map(Rule::from_string).collect();
+
+        // Optimization that removes unnecessary rules
+        while rules
+            .last()
+            .map_or(false, |rule| rule.command == final_command)
+        {
+            rules.pop();
+        }
+
         Workflow {
             name,
-            rules: rules_string[..rules_string.len() - 1]
-                .split(',')
-                .map(Rule::from_string)
-                .collect(),
+            rules,
+            final_command,
         }
     }
 
     fn next_command(&self, object: &Object) -> &Command {
-        &self
-            .rules
+        self.rules
             .iter()
-            .find(|rule| {
-                rule.condition.as_ref().map_or(true, |condition| {
-                    condition.ordering
-                        == object.value(&condition.property).cmp(&condition.cmp_value)
-                })
-            })
-            .unwrap()
-            .command
+            .find(|rule| rule.applies_to(object))
+            .map_or(&self.final_command, |rule| &rule.command)
     }
 }
 
 struct Rule<'a> {
-    condition: Option<Condition>,
+    condition: Condition,
     command: Command<'a>,
 }
 
 impl Rule<'_> {
     fn from_string(string: &str) -> Rule {
-        if string.contains(':') {
-            let mut string_iterator = string.split(':');
+        let mut string_iterator = string.split(':');
 
-            Rule {
-                condition: Some(Condition::from_string(string_iterator.next().unwrap())),
-                command: Command::from_string(string_iterator.next().unwrap()),
-            }
-        } else {
-            Rule {
-                condition: None,
-                command: Command::from_string(string),
-            }
+        Rule {
+            condition: Condition::from_string(string_iterator.next().unwrap()),
+            command: Command::from_string(string_iterator.next().unwrap()),
         }
+    }
+
+    fn applies_to(&self, object: &Object) -> bool {
+        self.condition.ordering
+            == object
+                .value(&self.condition.property)
+                .cmp(&self.condition.cmp_value)
     }
 }
 
@@ -135,7 +141,7 @@ impl Condition {
             "m" => Property::M,
             "a" => Property::A,
             "s" => Property::S,
-            _ => panic!("Invalid property"),
+            _ => panic!("Invalid property {}", string),
         };
 
         let ordering = match &string[1..2] {
@@ -159,6 +165,7 @@ enum Property {
     S,
 }
 
+#[derive(PartialEq)]
 enum Command<'a> {
     Accept,
     Reject,
