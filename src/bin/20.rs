@@ -6,25 +6,46 @@ pub fn part_one(input: &str) -> Option<u64> {
     let mut program = Program::from_input(input);
     let mut pulse_count = PulseCount::new();
 
+    let mut add_to_pulse_count = |pulse_packet: &PulsePacket| pulse_count.add(pulse_packet.pulse);
+
     for _ in 0..1000 {
-        program.run(&mut pulse_count);
+        program.run(&mut add_to_pulse_count);
     }
 
     Some(pulse_count.high * pulse_count.low)
 }
 
-pub fn part_two(input: &str) -> Option<u32> {
-    None
+pub fn part_two(input: &str) -> Option<u64> {
+    let mut program = Program::from_input(input);
+
+    // Due to the puzzle input shape we know the rx module has a single conjunction input
+    let receiver_module = program.module_inputs.get("rx").unwrap()[0];
+
+    let mut runtimes = HashMap::new();
+
+    for index in 0..2_u64.pow(12) {
+        program.run(&mut |pulse_packet| {
+            if pulse_packet.to == receiver_module && pulse_packet.pulse == Pulse::High {
+                runtimes
+                    .entry(pulse_packet.from.to_owned())
+                    .or_insert(index + 1);
+            }
+        })
+    }
+
+    Some(runtimes.values().product::<u64>())
 }
 
 struct Program<'a> {
     modules: HashMap<&'a str, Module<'a>>,
+    module_inputs: HashMap<&'a str, Vec<&'a str>>,
 }
 
 impl Program<'_> {
     fn from_input(input: &str) -> Program {
         let mut module_outputs = Vec::new();
         let mut modules = HashMap::new();
+        let mut module_inputs: HashMap<&str, Vec<&str>> = HashMap::new();
 
         for line in input.lines() {
             let module = Module::from_line(line);
@@ -38,17 +59,25 @@ impl Program<'_> {
                 if let Some(module) = modules.get_mut(output_module) {
                     module.add_input(module_name);
                 }
+
+                module_inputs
+                    .entry(output_module)
+                    .or_default()
+                    .push(module_name);
             }
         }
 
-        Program { modules }
+        Program {
+            modules,
+            module_inputs,
+        }
     }
 
-    fn run(&mut self, pulse_count: &mut PulseCount) {
+    fn run(&mut self, on_pulse_packet: &mut impl FnMut(&PulsePacket)) {
         let mut pulse_packets = VecDeque::from([PulsePacket::start()]);
 
         while let Some(pulse_packet) = pulse_packets.pop_front() {
-            pulse_count.add(pulse_packet.pulse);
+            on_pulse_packet(&pulse_packet);
 
             if let Some(module) = self.modules.get_mut(pulse_packet.to) {
                 if let Some(pulse) = module.process(pulse_packet) {
@@ -165,7 +194,7 @@ impl<'a> Logic<'a> {
     }
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum Pulse {
     High,
     Low,
@@ -198,7 +227,7 @@ struct PulsePacket<'a> {
 impl<'a> PulsePacket<'a> {
     fn start() -> PulsePacket<'a> {
         PulsePacket {
-            from: "",
+            from: "button",
             to: "broadcaster",
             pulse: Pulse::Low,
         }
@@ -223,13 +252,5 @@ mod tests {
             "examples", DAY, 2,
         ));
         assert_eq!(result, Some(11687500));
-    }
-
-    #[test]
-    fn test_part_two() {
-        let result = part_two(&advent_of_code::template::read_file_part(
-            "examples", DAY, 3,
-        ));
-        assert_eq!(result, None);
     }
 }
