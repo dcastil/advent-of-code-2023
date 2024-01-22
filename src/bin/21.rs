@@ -8,9 +8,15 @@ pub fn part_one(input: &str) -> Option<usize> {
 
 fn part_one_with_step_count(input: &str, step_count: u8) -> Option<usize> {
     let garden = Garden::from_input(input);
-    let positions = garden.get_possible_positions(step_count);
+    let distance_map = garden.get_distance_map();
+    let step_count_modulo = step_count % 2;
 
-    Some(positions.len())
+    Some(
+        distance_map
+            .values()
+            .filter(|&&v| v <= step_count && v % 2 == step_count_modulo)
+            .count(),
+    )
 }
 
 // Solution from https://github.com/villuna/aoc23/wiki/A-Geometric-solution-to-advent-of-code-2023,-day-21
@@ -93,31 +99,6 @@ impl Garden {
             max_x: max_x as u8,
             max_y: max_y as u8,
         }
-    }
-
-    fn get_possible_positions(&self, step_count: u8) -> HashSet<Coordinate> {
-        let mut positions = HashSet::from([self.start.clone()]);
-
-        for _ in 0..step_count {
-            let mut next_positions = HashSet::new();
-
-            for coordinate in positions {
-                next_positions.extend(
-                    [
-                        Direction::Up,
-                        Direction::Down,
-                        Direction::Left,
-                        Direction::Right,
-                    ]
-                    .iter()
-                    .filter_map(|direction| self.get_next_coordinate(&coordinate, direction)),
-                );
-            }
-
-            positions = next_positions;
-        }
-
-        positions
     }
 
     fn get_distance_map(&self) -> HashMap<Coordinate, u8> {
