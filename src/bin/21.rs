@@ -3,9 +3,10 @@ use std::collections::HashSet;
 advent_of_code::solution!(21);
 
 pub fn part_one(input: &str) -> Option<usize> {
-    // The test case is set up for 6 steps, but the real steps input is 64.
-    let step_count = if input.len() < 200 { 6 } else { 64 };
+    part_one_with_step_count(input, 64)
+}
 
+fn part_one_with_step_count(input: &str, step_count: u8) -> Option<usize> {
     let garden = Garden::from_input(input);
 
     Some(garden.get_possible_positions(step_count).len())
@@ -156,7 +157,8 @@ mod tests {
 
     #[test]
     fn test_part_one() {
-        let result = part_one(&advent_of_code::template::read_file("examples", DAY));
+        let result =
+            part_one_with_step_count(&advent_of_code::template::read_file("examples", DAY), 6);
         assert_eq!(result, Some(16));
     }
 
