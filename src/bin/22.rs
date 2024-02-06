@@ -180,5 +180,3 @@ mod tests {
         assert_eq!(result, None);
     }
 }
-
-// That's not the right answer; your answer is too low. Curiously, it's the right answer for someone else; you might be logged in to the wrong account or just unlucky.
