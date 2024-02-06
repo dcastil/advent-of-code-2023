@@ -69,13 +69,7 @@ impl BrickStack {
     fn redundant_bricks_count(&self) -> u16 {
         self.bricks
             .iter()
-            .filter(|brick| {
-                brick
-                    .supports
-                    .borrow()
-                    .iter()
-                    .all(|brick| brick.upgrade().unwrap().supported_by.len() > 1)
-            })
+            .filter(|brick| brick.is_redundant())
             .count() as u16
     }
 }
@@ -131,6 +125,13 @@ impl Brick {
 
     fn max_z(&self) -> i16 {
         self.start.z.max(self.end.z)
+    }
+
+    fn is_redundant(&self) -> bool {
+        self.supports
+            .borrow()
+            .iter()
+            .all(|brick| brick.upgrade().unwrap().supported_by.len() > 1)
     }
 }
 
