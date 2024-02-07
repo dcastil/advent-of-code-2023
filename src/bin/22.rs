@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    hash::Hash,
     rc::{Rc, Weak},
 };
 
@@ -9,13 +10,13 @@ advent_of_code::solution!(22);
 pub fn part_one(input: &str) -> Option<u16> {
     let brick_stack = BrickStack::from_input(input);
 
-    let redundant_bricks_count = brick_stack.redundant_bricks_count();
-
-    Some(redundant_bricks_count)
+    Some(brick_stack.redundant_bricks_count())
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let brick_stack = BrickStack::from_input(input);
+
+    Some(brick_stack.dependants_count())
 }
 
 struct BrickStack {
@@ -71,6 +72,43 @@ impl BrickStack {
             .iter()
             .filter(|brick| brick.is_redundant())
             .count() as u16
+    }
+
+    fn dependants_count(&self) -> u32 {
+        self.bricks
+            .iter()
+            .map(|brick| {
+                let mut dependants =
+                    HashSet::from_iter(brick.supported_by.iter().map(|brick| brick.hashable()));
+
+                Self::dependants_count_recursive(brick, &mut dependants) - 1
+            })
+            .sum()
+    }
+
+    fn dependants_count_recursive(
+        brick: &Rc<Brick>,
+        dependants: &mut HashSet<HashableBrick>,
+    ) -> u32 {
+        if brick
+            .supported_by
+            .iter()
+            .any(|brick| !dependants.contains(&brick.hashable()))
+        {
+            return 0;
+        }
+
+        dependants.insert(brick.hashable());
+
+        let count = brick
+            .supports
+            .borrow()
+            .iter()
+            .map(|brick| Self::dependants_count_recursive(&brick.upgrade().unwrap(), dependants))
+            .sum::<u32>()
+            + 1;
+
+        count
     }
 }
 
@@ -133,6 +171,13 @@ impl Brick {
             .iter()
             .all(|brick| brick.upgrade().unwrap().supported_by.len() > 1)
     }
+
+    fn hashable(&self) -> HashableBrick {
+        HashableBrick {
+            start: self.start.clone(),
+            end: self.end.clone(),
+        }
+    }
 }
 
 impl PartialEq for Brick {
@@ -141,7 +186,13 @@ impl PartialEq for Brick {
     }
 }
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Clone)]
+struct HashableBrick {
+    start: Position,
+    end: Position,
+}
+
+#[derive(Hash, Eq, PartialEq, Clone)]
 struct Position {
     x: i16,
     y: i16,
@@ -177,6 +228,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(7));
     }
 }
